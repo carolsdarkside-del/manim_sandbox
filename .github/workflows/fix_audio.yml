@@ -3,20 +3,28 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Download Everything
+      - name: Download All Dependencies
         run: |
-          mkdir final_suitcase
-          pip download stable-audio-tools --dest ./final_suitcase --platform win_amd64 --python-version 310 --only-binary=:all:
+          mkdir suitcase
+          pip download \
+            stable-audio-tools \
+            torch torchvision torchaudio \
+            --index-url https://download.pytorch.org/whl/cu121 \
+            --extra-index-url https://pypi.org/simple \
+            --platform win_amd64 \
+            --python-version 310 \
+            --only-binary=:all: \
+            --dest ./suitcase
 
-      - name: Upload Result
+      - name: Upload Suitcase
         uses: actions/upload-artifact@v4
         with:
           name: all_dependencies_for_iran
-          path: final_suitcase/
+          path: suitcase/
