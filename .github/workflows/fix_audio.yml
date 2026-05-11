@@ -1,0 +1,23 @@
+name: Gather All Windows Parts
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Download Everything
+        run: |
+          mkdir final_suitcase
+          python -m pip install --upgrade pip
+          pip download stable-audio-tools --dest ./final_suitcase --platform win_amd64 --python-version 310 --implementation cp --abi cp310
+
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: all_dependencies_for_iran
+          path: ./final_suitcase
