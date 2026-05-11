@@ -13,11 +13,10 @@ jobs:
       - name: Download Everything
         run: |
           mkdir final_suitcase
-          python -m pip install --upgrade pip
-          pip download stable-audio-tools --dest ./final_suitcase --platform win_amd64 --python-version 310 --implementation cp --abi cp310
+          pip download stable-audio-tools --dest ./final_suitcase --platform win_amd64 --python-version 310 --only-binary=:all:
 
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
           name: all_dependencies_for_iran
-          path: ./final_suitcase
+          path: final_suitcase/
