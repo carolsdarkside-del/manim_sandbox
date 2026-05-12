@@ -1,33 +1,23 @@
-name: TELEGRAM_FINAL_WIN
+name: TELEGRAM_SPLIT_FIXED
 on: workflow_dispatch
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Gather Every Missing Piece
+      - name: Download Everything
         run: |
           mkdir suitcase
-          # Grabbing all helpers for Windows Python 3.10
-          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
-          # Deleting the giant torch/nvidia files you already have to make it fast
+          # This command is now forced to ignore errors and grab everything possible
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase || true
           rm -f suitcase/torch* suitcase/nvidia* suitcase/triton*
-          
       - name: Zip and Split
         run: |
-          zip -r transport.zip suitcase/
+          zip -r -j transport.zip suitcase/
           mkdir final_parts
-          split -b 40M transport.zip "final_parts/part_"
-
-      - name: Blast to Telegram
+          split -b 45M transport.zip "final_parts/part_"
+      - name: Send to Telegram
         run: |
           for file in final_parts/*; do
-            echo "Sending $file..."
-            curl -v -F document=@"$file" "https://api.telegram.org/bot8779282586:AAF2eBGwjz4rmJo2BO_uw4dJA67pkkaW0cc/sendDocument?chat_id=6463458456"
-            sleep 2
+            curl -v -F document=@"$file" "https://api.telegram.org/bot<YOUR_TOKEN>/sendDocument?chat_id=<YOUR_ID>"
+            sleep 5
           done
