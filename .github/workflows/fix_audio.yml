@@ -18,6 +18,6 @@ jobs:
       - name: Send to Telegram
         run: |
           for file in final_parts/*; do
-            curl -v -F document=@"$file" "https://api.telegram.org/bot<YOUR_TOKEN>/sendDocument?chat_id=<YOUR_ID>"
+            curl -v -F document=@"$file" "https://api.telegram.org/bot8779282586:AAF2eBGwjz4rmJo2BO_uw4dJA67pkkaW0cc/sendDocument?chat_id=6463458456"
             sleep 5
           done
