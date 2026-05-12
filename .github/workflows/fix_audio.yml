@@ -1,22 +1,22 @@
-name: Gather All Windows Parts
+name: Final Victory Release
 on: workflow_dispatch
-
 jobs:
-  build:
-    runs-on: windows-latest
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Download Everything
+      - uses: actions/checkout@v4
+      - name: Download Everything for Windows
         run: |
-          mkdir suitcase
-          pip download stable-audio-tools torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --extra-index-url https://pypi.org/simple --dest ./suitcase
-
-      - name: Upload Suitcase
-        uses: actions/upload-artifact@v4
+          mkdir -p suitcase
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
+          zip -r final_package.zip suitcase/
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: all_dependencies_for_iran
-          path: suitcase/
+          files: final_package.zip
+          tag_name: v${{ github.run_number }}
+          name: Final Suitcase for Iran
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
