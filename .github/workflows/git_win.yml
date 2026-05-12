@@ -1,0 +1,48 @@
+name: Push Files to Repo
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Dependencies
+        run: |
+          mkdir downloads
+          pip download stable-audio-tools --dest ./downloads --platform win_amd64 --python-version 310 --only-binary=:all:
+          # Removing big torch files you already have to save space
+          dir ./downloads/torch* | % { del $_.FullName }
+
+      - name: Split and Commit
+        shell: pwsh
+        run: |
+          # Split the files so they stay under GitHub's 100MB limit
+          Compress-Archive -Path downloads/* -DestinationPath dependencies.zip
+          mkdir final_parts
+          $fileStream = [System.IO.File]::OpenRead("dependencies.zip")
+          $partSize = 50MB
+          $buffer = New-Object byte[] $partSize
+          $index = 1
+          while ($read = $fileStream.Read($buffer, 0, $buffer.Length)) {
+              $partPath = "final_parts/package.zip.part$index"
+              $partStream = [System.IO.File]::OpenWrite($partPath)
+              $partStream.Write($buffer, 0, $read)
+              $partStream.Close()
+              $index++
+          }
+          $fileStream.Close()
+
+      - name: Upload to Repository
+        shell: bash
+        run: |
+          git config --global user.name "Gatherer"
+          git config --global user.email "gatherer@github.com"
+          mkdir -p dependency_folder
+          cp final_parts/* dependency_folder/
+          git add dependency_folder/*
+          git commit -m "Add dependencies in parts"
+          git push
