@@ -1,25 +1,31 @@
-name: PUSH_PARTS_TO_CODE
+name: TELEGRAM_SUITCASE_SPLIT
 on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          ref: master
-      - name: Gather Everything
+          python-version: '3.10'
+
+      - name: Gather All Missing Files
         run: |
-          mkdir -p temp_suitcase
-          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./temp_suitcase
-          zip -r car_parts.zip temp_suitcase/
-          mkdir -p car_parts_folder
-          split -b 50M car_parts.zip "car_parts_folder/parts.zip."
-      - name: Push to Code Tab
+          mkdir suitcase
+          # Grabbing all helpers. We remove torch to keep the size small.
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
+          rm -f suitcase/torch* suitcase/nvidia* suitcase/triton*
+
+      - name: Zip and Split into 45MB pieces
         run: |
-          git config --global user.name "robot"
-          git config --global user.email "robot@github.com"
-          git add car_parts_folder/*
-          git commit -m "The whole car is here"
-          git push origin master
+          zip -r full_car.zip suitcase/
+          mkdir -p final_parts
+          split -b 45M full_car.zip "final_parts/car_part_"
+
+      - name: Send to Telegram
+        run: |
+          for file in final_parts/*; do
+            echo "Sending $file..."
+            curl -v -F document=@"$file" "https://api.telegram.org/bot8779282586:AAF2eBGwjz4rmJo2BO_uw4dJA67pkkaW0cc/sendDocument?chat_id=6463458456"
+            sleep 3 # Wait 3 seconds between parts so Telegram doesn't block the bot
+          done
