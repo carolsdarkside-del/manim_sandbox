@@ -1,22 +1,25 @@
-name: Final Victory Release
+name: Push Suitcase to Code Tab
 on: workflow_dispatch
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Download Everything for Windows
+      - name: Download All Windows Parts
         run: |
           mkdir -p suitcase
           pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
-          zip -r final_package.zip suitcase/
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: final_package.zip
-          tag_name: v${{ github.run_number }}
-          name: Final Suitcase for Iran
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          zip -r full_suitcase.zip suitcase/
+      - name: Split into Unblocked Pieces
+        run: |
+          mkdir -p final_files
+          split -b 90M full_suitcase.zip "final_files/part_"
+      - name: Upload to Code Tab
+        run: |
+          git config --global user.name "robot"
+          git config --global user.email "robot@github.com"
+          git add final_files/*
+          git commit -m "Files are here"
+          git push origin master
