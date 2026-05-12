@@ -1,31 +1,25 @@
-name: Final Victory Push
+name: PUSH_PARTS_TO_CODE
 on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: master
-
-      - name: Download Windows Parts
+      - name: Gather Everything
         run: |
-          mkdir -p dependency_suitcase
-          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./dependency_suitcase
-          # Remove torch files because you already have the big 3
-          rm -f dependency_suitcase/torch* 
-          
-      - name: Zip and Split
-        run: |
-          zip -r suitcase.zip dependency_suitcase/
-          mkdir -p final_wheels_for_iran
-          split -b 50M suitcase.zip "final_wheels_for_iran/part_"
-
-      - name: Force Push to Code Tab
+          mkdir -p temp_suitcase
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./temp_suitcase
+          zip -r car_parts.zip temp_suitcase/
+          mkdir -p car_parts_folder
+          split -b 50M car_parts.zip "car_parts_folder/parts.zip."
+      - name: Push to Code Tab
         run: |
           git config --global user.name "robot"
           git config --global user.email "robot@github.com"
-          git add final_wheels_for_iran/*
-          git commit -m "Victory"
+          git add car_parts_folder/*
+          git commit -m "The whole car is here"
           git push origin master
