@@ -1,41 +1,22 @@
-name: Push Files to Repo
+name: Final Push
 on: workflow_dispatch
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Download Windows Dependencies
+      - uses: actions/checkout@v4
+      - name: Get Files
         run: |
-          mkdir downloads
-          pip download stable-audio-tools \
-            --platform win_amd64 \
-            --python-version 310 \
-            --only-binary=:all: \
-            --dest ./downloads
-
-      - name: Zip and Split
+          mkdir -p suitcase
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
+          zip -r everything.zip suitcase/
+          split -b 40M everything.zip "part_"
+          mkdir -p final_zip_parts
+          mv part_* final_zip_parts/
+      - name: Commit
         run: |
-          zip -r dependencies.zip downloads/*
-          mkdir final_parts
-          split -b 50M dependencies.zip "final_parts/package.zip.part"
-
-      - name: Upload to Repository
-        run: |
-          git config --global user.name "Gatherer"
-          git config --global user.email "gatherer@github.com"
-          mkdir -p dependency_folder
-          cp final_parts/* dependency_folder/
-          git add dependency_folder/*
-          git commit -m "Add dependencies in parts"
-          git push origin master
+          git config --global user.name "robot"
+          git config --global user.email "robot@github.com"
+          git add final_zip_parts/*
+          git commit -m "done"
+          git push
