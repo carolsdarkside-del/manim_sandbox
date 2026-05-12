@@ -3,41 +3,34 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Download Dependencies
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Download Windows Dependencies
         run: |
           mkdir downloads
-          pip download stable-audio-tools --dest ./downloads --platform win_amd64 --python-version 310 --only-binary=:all:
-          # Removing big torch files you already have to save space
-          dir ./downloads/torch* | % { del $_.FullName }
+          pip download stable-audio-tools \
+            --platform win_amd64 \
+            --python-version 310 \
+            --only-binary=:all: \
+            --dest ./downloads
 
-      - name: Split and Commit
-        shell: pwsh
+      - name: Zip and Split
         run: |
-          # Split the files so they stay under GitHub's 100MB limit
-          Compress-Archive -Path downloads/* -DestinationPath dependencies.zip
+          zip -r dependencies.zip downloads/*
           mkdir final_parts
-          $fileStream = [System.IO.File]::OpenRead("dependencies.zip")
-          $partSize = 50MB
-          $buffer = New-Object byte[] $partSize
-          $index = 1
-          while ($read = $fileStream.Read($buffer, 0, $buffer.Length)) {
-              $partPath = "final_parts/package.zip.part$index"
-              $partStream = [System.IO.File]::OpenWrite($partPath)
-              $partStream.Write($buffer, 0, $read)
-              $partStream.Close()
-              $index++
-          }
-          $fileStream.Close()
+          split -b 50M dependencies.zip "final_parts/package.zip.part"
 
       - name: Upload to Repository
-        shell: bash
         run: |
           git config --global user.name "Gatherer"
           git config --global user.email "gatherer@github.com"
@@ -45,4 +38,4 @@ jobs:
           cp final_parts/* dependency_folder/
           git add dependency_folder/*
           git commit -m "Add dependencies in parts"
-          git push
+          git push origin master
