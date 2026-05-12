@@ -1,25 +1,31 @@
-name: Push Suitcase to Code Tab
+name: Final Victory Push
 on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Download All Windows Parts
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Download Windows Parts
         run: |
-          mkdir -p suitcase
-          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
-          zip -r full_suitcase.zip suitcase/
-      - name: Split into Unblocked Pieces
+          mkdir -p dependency_suitcase
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./dependency_suitcase
+          # Remove torch files because you already have the big 3
+          rm -f dependency_suitcase/torch* 
+          
+      - name: Zip and Split
         run: |
-          mkdir -p final_files
-          split -b 90M full_suitcase.zip "final_files/part_"
-      - name: Upload to Code Tab
+          zip -r suitcase.zip dependency_suitcase/
+          mkdir -p final_wheels_for_iran
+          split -b 50M suitcase.zip "final_wheels_for_iran/part_"
+
+      - name: Force Push to Code Tab
         run: |
           git config --global user.name "robot"
           git config --global user.email "robot@github.com"
-          git add final_files/*
-          git commit -m "Files are here"
+          git add final_wheels_for_iran/*
+          git commit -m "Victory"
           git push origin master
