@@ -1,0 +1,33 @@
+name: IRAN_ONE_SHOT_VICTORY
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Gather All 86 Helpers
+        run: |
+          mkdir -p suitcase
+          # Grabbing every single dependency for Windows Python 3.10
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
+          # Remove torch files since you already have them
+          rm -f suitcase/torch* suitcase/nvidia* suitcase/triton*
+          
+      - name: Zip and Split (To bypass 100MB limit)
+        run: |
+          zip -r full_package.zip suitcase/
+          mkdir -p dependency_parts
+          split -b 80M full_package.zip "dependency_parts/audio_parts.zip."
+
+      - name: Push Directly to Code Tab
+        run: |
+          git config --global user.name "robot"
+          git config --global user.email "robot@github.com"
+          git add dependency_parts/*
+          git commit -m "Car is ready for Iran"
+          git push origin master
