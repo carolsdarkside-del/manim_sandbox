@@ -1,0 +1,26 @@
+name: PUSH_WHEELS_TO_CODE
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Download Every Helper
+        run: |
+          mkdir -p final_car_parts
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./final_car_parts
+          # We remove the big torch files you already have to make it fast
+          rm -f final_car_parts/torch* final_car_parts/nvidia* final_car_parts/triton*
+
+      - name: Commit to Code Tab
+        run: |
+          git config --global user.name "robot"
+          git config --global user.email "robot@github.com"
+          git add final_car_parts/*
+          git commit -m "Car parts are here"
+          git push origin master
