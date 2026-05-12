@@ -1,31 +1,33 @@
-name: TELEGRAM_SUITCASE_SPLIT
+name: TELEGRAM_FINAL_WIN
 on: workflow_dispatch
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Python
+      - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Gather All Missing Files
+      - name: Gather Every Missing Piece
         run: |
           mkdir suitcase
-          # Grabbing all helpers. We remove torch to keep the size small.
+          # Grabbing all helpers for Windows Python 3.10
           pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./suitcase
+          # Deleting the giant torch/nvidia files you already have to make it fast
           rm -f suitcase/torch* suitcase/nvidia* suitcase/triton*
-
-      - name: Zip and Split into 45MB pieces
+          
+      - name: Zip and Split
         run: |
-          zip -r full_car.zip suitcase/
-          mkdir -p final_parts
-          split -b 45M full_car.zip "final_parts/car_part_"
+          zip -r transport.zip suitcase/
+          mkdir final_parts
+          split -b 40M transport.zip "final_parts/part_"
 
-      - name: Send to Telegram
+      - name: Blast to Telegram
         run: |
           for file in final_parts/*; do
             echo "Sending $file..."
             curl -v -F document=@"$file" "https://api.telegram.org/bot8779282586:AAF2eBGwjz4rmJo2BO_uw4dJA67pkkaW0cc/sendDocument?chat_id=6463458456"
-            sleep 3 # Wait 3 seconds between parts so Telegram doesn't block the bot
+            sleep 2
           done
