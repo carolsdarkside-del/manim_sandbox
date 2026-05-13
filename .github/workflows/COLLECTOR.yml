@@ -1,0 +1,25 @@
+name: COLLECT_ALL_PARTS
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - name: Download all 88 parts
+        run: |
+          mkdir -p THE_SUITCASE
+          # Grabs everything for Windows 3.10
+          pip download stable-audio-tools --platform win_amd64 --python-version 310 --only-binary=:all: --dest ./THE_SUITCASE
+          # Remove torch/nvidia files so the ZIP is small and fast
+          rm -f THE_SUITCASE/torch* THE_SUITCASE/nvidia* THE_SUITCASE/triton*
+      - name: Push to Code Tab
+        run: |
+          git config --global user.name "robot"
+          git config --global user.email "robot@github.com"
+          git add THE_SUITCASE/*
+          git commit -m "All helpers are in this folder"
+          git push origin master
